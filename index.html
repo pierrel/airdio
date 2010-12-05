@@ -59,7 +59,7 @@
 			
 			<div id="step3" style="display: none">
 				<ul id="songs"></ul>
-				<audio id="playa-play" controls="controls">
+				<audio id="playa-play" controls="controls" preload="auto">
 					No audio support... sorry
 				</audio>
 			</div>
@@ -123,13 +123,13 @@
 		var from_step_2 = function(bucket_name) {
 			var bucket_url = 'https://s3.amazonaws.com/' + escape(bucket_name);
 			S3Ajax.listKeys(bucket_name, {}, function(req, obj) {
-				// key example: https://s3.amazonaws.com/pmusic/music/02+And+I+Told+Them+I+Invented+Times+New+Roman.mp3
-				$('songs').html(obj);
-				songs = obj.ListBucketResult.Contents;
+				var songs = obj.ListBucketResult.Contents;
 				for(i=0; i < songs.length; i++) {
-					song = songs[i];
-					song_url = bucket_url + '/' + escape(song.Key);
-					$('#songs').append('<li><a href="#" onclick="change_song(\'' + song_url + '\')">' + song.Key + '</a></li>');
+					var song = songs[i];
+					if (song.Key.match(/mp3$/)) {
+						song_url = bucket_url + '/' + escape(song.Key);
+						$('#songs').append('<li><a href="#" onclick="change_song(\'' + song_url + '\')">' + song.Key + '</a></li>');
+					}
 				}
 				
 				$('#step2').slideUp();
@@ -146,6 +146,8 @@
 			
 			audio.pause();
 			audio.setAttribute('src', src);
+			audio.preload = 'auto';
+			audio.autoplay = "true";
 			audio.play();
 		}
 	</script>
