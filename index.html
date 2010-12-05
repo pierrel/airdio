@@ -58,6 +58,7 @@
 			</div>
 			
 			<div id="step3" style="display: none">
+				<ul id="songs"></ul>
 				<audio controls="controls">
 					Your browser does not support the audio element.
 				</audio>
@@ -97,7 +98,6 @@
 	
 	<script type="text/javascript" charset="utf-8">
 		
-		
 		var from_step_1 = function() {
 			// get info
 			if (S3Ajax.KEY_ID.length == 0)
@@ -112,16 +112,31 @@
 					var bucket = buckets[i];
 					$('#buckets').append('<a href="#" onclick="from_step_2(\'' + bucket.Name + '\')"><li>' + bucket.Name + '</li></a>');
 				}
+				
 				$('#step1').slideUp();
 				$('#instructions').html('Choose a bucket');
 				$('#step2').slideDown();
 			}, function(request, object) {
-				alert('Your keys must have been wrong...');
+				alert('Your keys are wrong, try again.');
 			})
 		}
 		
 		var from_step_2 = function(bucket_name) {
-			alert('chose ' + bucket_name);
+			S3Ajax.listKeys(bucket_name, {}, function(req, obj) {
+				// key example: https://s3.amazonaws.com/pmusic/music/02+And+I+Told+Them+I+Invented+Times+New+Roman.mp3
+				$('songs').html(obj);
+				songs = obj.ListBucketResult.Contents;
+				for(i=0; i < songs.length; i++) {
+					song = songs[i];
+					$('#songs').append('<li>' + song.Key + '</li>');
+				}
+				
+				$('#step2').slideUp();
+				$('#instructions').html('Choose a song');
+				$('#step3').slideDown();
+			}, function(req, obj) {
+				alert("Couldn't grab files... sorry.");
+			});
 		}
 	</script>
 </body>
