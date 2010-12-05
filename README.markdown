@@ -1,6 +1,6 @@
 #  Airdio
 
-## Boilerplate code from HTML5Boilerplate [http://html5boilerplate.com]
+## Boilerplate code from HTML5Boilerplate [http://html5boilerplate.com](http://html5boilerplate.com)
 
 ## Usage
 1. Throw some mp3s in an S3 bucket
