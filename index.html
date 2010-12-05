@@ -59,6 +59,9 @@
 			
 			<div id="step3" style="display: none">
 				<ul id="songs"></ul>
+				<audio id="playa-play" controls="controls">
+					No audio support... sorry
+				</audio>
 			</div>
 		</div>
 
@@ -93,8 +96,7 @@
 	<script src="js/libs/S3Ajax.js" type="text/javascript" charset="utf-8"></script>
 	<!-- end S3 scripts -->
 	
-	<script type="text/javascript" charset="utf-8">
-		
+	<script type="text/javascript" charset="utf-8">		
 		var from_step_1 = function() {
 			// get info
 			if (S3Ajax.KEY_ID.length == 0)
@@ -127,7 +129,7 @@
 				for(i=0; i < songs.length; i++) {
 					song = songs[i];
 					song_url = bucket_url + '/' + escape(song.Key);
-					$('#songs').append('<li><a href="' + song_url + '">' + song.Key + '</a></li>');
+					$('#songs').append('<li><a href="#" onclick="change_song(\'' + song_url + '\')">' + song.Key + '</a></li>');
 				}
 				
 				$('#step2').slideUp();
@@ -136,6 +138,15 @@
 			}, function(req, obj) {
 				alert("Couldn't grab files... sorry.");
 			});
+		}
+		
+		
+		var change_song = function(src) {
+			var audio = document.getElementById('playa-play');
+			
+			audio.pause();
+			audio.setAttribute('src', src);
+			audio.play();
 		}
 	</script>
 </body>
