@@ -59,9 +59,6 @@
 			
 			<div id="step3" style="display: none">
 				<ul id="songs"></ul>
-				<audio controls="controls">
-					Your browser does not support the audio element.
-				</audio>
 			</div>
 		</div>
 
@@ -110,7 +107,7 @@
 				var buckets = obj.ListAllMyBucketsResult.Buckets.Bucket;
 				for (i=0; i < buckets.length; i++) {
 					var bucket = buckets[i];
-					$('#buckets').append('<a href="#" onclick="from_step_2(\'' + bucket.Name + '\')"><li>' + bucket.Name + '</li></a>');
+					$('#buckets').append('<li><a href="#" onclick="from_step_2(\'' + bucket.Name + '\')">' + bucket.Name + '</a></li>');
 				}
 				
 				$('#step1').slideUp();
@@ -122,13 +119,15 @@
 		}
 		
 		var from_step_2 = function(bucket_name) {
+			var bucket_url = 'https://s3.amazonaws.com/' + escape(bucket_name);
 			S3Ajax.listKeys(bucket_name, {}, function(req, obj) {
 				// key example: https://s3.amazonaws.com/pmusic/music/02+And+I+Told+Them+I+Invented+Times+New+Roman.mp3
 				$('songs').html(obj);
 				songs = obj.ListBucketResult.Contents;
 				for(i=0; i < songs.length; i++) {
 					song = songs[i];
-					$('#songs').append('<li>' + song.Key + '</li>');
+					song_url = bucket_url + '/' + escape(song.Key);
+					$('#songs').append('<li><a href="' + song_url + '">' + song.Key + '</a></li>');
 				}
 				
 				$('#step2').slideUp();
