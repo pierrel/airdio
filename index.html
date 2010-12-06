@@ -42,7 +42,7 @@
 		<header>
 
 		</header>
-
+		
 		<div id="main">
 			<h2 id="instructions">Enter your Credentials</h2><br>
 			<div id="step1">
@@ -112,7 +112,7 @@
 	<script src="js/mylibs/utils.js" type="text/javascript" charset="utf-8"></script>
 	<!-- end app scripts -->
 	
-	<script type="text/javascript" charset="utf-8">			
+	<script type="text/javascript" charset="utf-8">	
 		var from_step_1 = function() {
 			// get info
 			if (S3Ajax.KEY_ID.length == 0)
@@ -188,20 +188,28 @@
 			var list = $('#songs');
 
 			for (var artist in db) {
+				var artist_li = $('<li>').html(artist);
+				var artist_ul = $('<ul>')
+				list.append(artist_li);
+				list.append(artist_ul);
+				
 				for (var album in db[artist]) {
+					var album_li = $('<li>').html(album);
+					var album_ul = $('<ul>');
+					artist_ul.append(album_li);
+					artist_ul.append(album_ul);
+					
 					for (i=0; i<db[artist][album].length; i++) {
 						var song = db[artist][album][i];
 						var li = $('<li>')
-						var a = $('<a>', {
-							href: '#'});
-						a.html(artist + ' – ' + album + ' – ' + song.title);
+						var a = $('<a>', {href: '#'}).html(song.title);
 						a.click((function(bucket, key) {
 							return function() {
 								change_song(Utils.url(bucket, key));
 							}
 						})(bucket, song.key));
 						li.append(a);
-						list.append(li);
+						album_ul.append(li);
 					}
 				}
 			}
