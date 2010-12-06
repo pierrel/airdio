@@ -116,7 +116,7 @@
 	<script type="text/javascript" charset="utf-8">	
 		var manifest = null;
 		var playlist = Playlist([]);
-		var main_bucket = '';
+		var main_bucket = '';		
 				
 		var from_step_1 = function() {
 			// get info
@@ -267,7 +267,10 @@
 		var audio = document.getElementById('playa-play');
 		
 		audio.addEventListener('ended', function() {
-			change_song(Utils.url(main_bucket, playlist.next()));
+			var new_song = playlist.next();
+			if (new_song) {
+				change_song(Utils.url(main_bucket, new_song));
+			}
 		});
 		
 		audio.addEventListener('canplay', function() {
