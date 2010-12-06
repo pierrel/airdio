@@ -110,9 +110,14 @@
 	<!-- app scripts -->
 	<script src="js/mylibs/manifest.js" type="text/javascript" charset="utf-8"></script>
 	<script src="js/mylibs/utils.js" type="text/javascript" charset="utf-8"></script>
+	<script src="js/mylibs/playlist.js" type="text/javascript" charset="utf-8"></script>
 	<!-- end app scripts -->
 	
 	<script type="text/javascript" charset="utf-8">	
+		var manifest = null;
+		var playlist = Playlist([]);
+		var main_bucket = '';
+				
 		var from_step_1 = function() {
 			// get info
 			if (S3Ajax.KEY_ID.length == 0)
@@ -136,9 +141,9 @@
 			})
 		}
 		
-		var from_step_2 = function(bucket_name) {
-			var manifest = Manifest(bucket_name);
-			
+		var from_step_2 = function(bucket_name) {	
+			main_bucket = bucket_name;
+			manifest = Manifest(bucket_name);
 			// get all the keys and make sure the manifest has them, yeah it's disgusting I know...
 			manifest.sync(function() {
 				S3Ajax.listKeys(bucket_name, {}, function(req, obj) {
@@ -172,15 +177,42 @@
 			$('#step3').slideDown();
 		}
 		
+		var change_playlist = function() {
+			var audio = document.getElementById('playa-play');
+			
+			
+			audio.pause();
+			
+		}
 		
 		var change_song = function(src) {
 			var audio = document.getElementById('playa-play');
 			
 			audio.pause();
 			audio.setAttribute('src', src);
-			audio.preload = 'auto';
-			audio.autoplay = "true";
-			audio.play();
+		}
+		
+		var queue_album_playlist = function(artist, album) {
+			var song_keys = [];
+			var songs = manifest.db[artist][album];
+			 for (i=0; i < songs.length; i++) {
+				song_keys.push(songs[i].key);
+			}
+			playlist = Playlist(song_keys);
+			change_song(Utils.url(main_bucket, playlist.current()));
+		}
+		
+		var queue_artist_playlist = function(artist) {
+			var song_keys = [];
+			var albums = manifest.db[artist];
+			for(var album in albums) {
+				var songs = albums[album];
+				for(i=0; i < songs.length; i++) {
+					song_keys.push(songs[i].key);
+				}
+			}
+			playlist = Playlist(song_keys);
+			change_song(Utils.url(main_bucket, playlist.current()));
 		}
 		
 		var	generate_list = function(bucket, db) {
@@ -188,16 +220,32 @@
 			var list = $('#songs');
 
 			for (var artist in db) {
-				var artist_li = $('<li>').html(artist);
-				var artist_ul = $('<ul>')
+				var artist_li = $('<li>');
+				var artist_a = $('<a>', {href: "#"}).html(artist);
+				var artist_ul = $('<ul>');
+				artist_li.append(artist_a);
 				list.append(artist_li);
 				list.append(artist_ul);
 				
+				artist_a.click((function(artist) {
+					return function() {
+						queue_artist_playlist(artist);
+					}
+				})(artist));
+				
 				for (var album in db[artist]) {
-					var album_li = $('<li>').html(album);
+					var album_li = $('<li>');
+					var album_a = $('<a>', {href: "#"}).html(album);
 					var album_ul = $('<ul>');
+					album_li.append(album_a);
 					artist_ul.append(album_li);
 					artist_ul.append(album_ul);
+					
+					album_a.click((function(artist, album) {
+						return function() {
+							queue_album_playlist(artist, album);
+						}
+					})(artist, album));
 					
 					for (i=0; i<db[artist][album].length; i++) {
 						var song = db[artist][album][i];
@@ -214,6 +262,17 @@
 				}
 			}
 		}
+		
+		// Events
+		var audio = document.getElementById('playa-play');
+		
+		audio.addEventListener('ended', function() {
+			change_song(Utils.url(main_bucket, playlist.next()));
+		});
+		
+		audio.addEventListener('canplay', function() {
+			audio.play();
+		});
 	</script>
 </body>
 </html>
