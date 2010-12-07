@@ -113,6 +113,7 @@
 	
 	
 	<!-- app scripts -->
+	<script src="js/mylibs/song.js" type="text/javascript" charset="utf-8"></script>
 	<script src="js/mylibs/manifest.js" type="text/javascript" charset="utf-8"></script>
 	<script src="js/mylibs/utils.js" type="text/javascript" charset="utf-8"></script>
 	<script src="js/mylibs/playlist.js" type="text/javascript" charset="utf-8"></script>
@@ -121,7 +122,7 @@
 	<script type="text/javascript" charset="utf-8">		
 		var manifest = null;
 		var playlist = Playlist([]);
-		var main_bucket = '';		
+		var main_bucket = '';
 				
 		var from_step_1 = function() {
 			// get info
@@ -203,25 +204,23 @@
 		}
 		
 		var queue_album_playlist = function(artist, album) {
-			var song_keys = [];
-			var songs = manifest.db[artist][album];
-			 for (i=0; i < songs.length; i++) {
-				song_keys.push(songs[i].key);
-			}
-			playlist = Playlist(song_keys);
+			var songs = manifest.artist_album_songs(artist, album);
+			
+			playlist = Playlist(_(songs).map(function(song) {return song.key}));
 			change_song(Utils.url(main_bucket, playlist.current()));
 		}
 		
 		var queue_artist_playlist = function(artist) {
-			var song_keys = [];
 			var albums = manifest.db[artist];
+			var song_nos = [];
 			for(var album in albums) {
 				var songs = albums[album];
-				for(i=0; i < songs.length; i++) {
-					song_keys.push(songs[i].key);
+				for(var song_no in songs) {
+					song_nos.push(song_no);
 				}
 			}
-			playlist = Playlist(song_keys);
+			
+			playlist = Playlist(_.map(song_nos, function(no) {return songs[no].key}));
 			change_song(Utils.url(main_bucket, playlist.current()));
 		}
 		
@@ -262,7 +261,7 @@
 					for(var track_no in db[artist][album]) {
 						tracks.push(track_no);
 					}
-					tracks.sort();
+					tracks.sort(function(i, j){ return i - j;})
 					
 					for (i=0; i<tracks.length; i++) {
 						var track_no = tracks[i];

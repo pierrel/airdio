@@ -54,6 +54,47 @@ Manifest = function(bucket) {
 		keys: function() { return structure.meta.keys },
 		add_key: function(key) { structure.meta.keys.push(key) }, // look (in JS: TGP) for how to make this private
 		
+		arists: function() {
+			var result = [];
+			for(var artist in this.db) {
+				result.push(artist);
+			}
+			
+			result.sort();
+			return result;
+		},
+		artist_albums: function(artist_name) {
+			var result = [];
+			for(var album in this.db[artist_name]) {
+				result.push(artist);
+			}
+			
+			result.sort();
+			return result;
+		},
+		artist_album_songs: function(artist, album) {
+			var result = [];
+			var sorted_nos = [];
+			var db_songs = this.db[artist][album];
+			for(var song_no in db_songs) {
+				sorted_nos.push(song_no);
+			}
+			sorted_nos.sort(function(i, j){return i-j});
+			
+			for (i=0; i < sorted_nos.length; i++) {
+				var song_no = sorted_nos[i];
+				result.push(Song({
+					key: db_songs[song_no].key,
+					track: song_no,
+					title: db_songs[song_no].title,
+					artist: artist,
+					album: album
+				}));
+			}
+			
+			return result;
+		},
+		
 		add_song: function(opts) { // track, title, album, artist, key, callback(song_opts, db)
 			if (!this.syncd) { // haven't grabbed the file
 				var that = this;

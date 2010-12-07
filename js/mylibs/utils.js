@@ -7,5 +7,9 @@ Utils = {
 	initS3: function(key, secret) {
 		S3Ajax.KEY_ID = key;
 		S3Ajax.SECRET_KEY = secret;
+	},
+	
+	numsort: function(i, j) {
+		return i - j;
 	}
 }
