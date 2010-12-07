@@ -66,7 +66,7 @@ Manifest = function(bucket) {
 		artist_albums: function(artist_name) {
 			var result = [];
 			for(var album in this.db[artist_name]) {
-				result.push(artist);
+				result.push(album);
 			}
 			
 			result.sort();

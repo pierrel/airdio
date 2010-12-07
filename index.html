@@ -119,7 +119,7 @@
 	<script src="js/mylibs/playlist.js" type="text/javascript" charset="utf-8"></script>
 	<!-- end app scripts -->
 	
-	<script type="text/javascript" charset="utf-8">		
+	<script type="text/javascript" charset="utf-8">				
 		var manifest = null;
 		var playlist = Playlist([]);
 		var main_bucket = '';
@@ -211,16 +211,14 @@
 		}
 		
 		var queue_artist_playlist = function(artist) {
-			var albums = manifest.db[artist];
-			var song_nos = [];
-			for(var album in albums) {
-				var songs = albums[album];
-				for(var song_no in songs) {
-					song_nos.push(song_no);
-				}
-			}
+			var songs = _(manifest.artist_albums(artist)).chain()
+				.map((function(artist, manifest){ return function(album) {
+					return manifest.artist_album_songs(artist, album);
+				}})(artist, manifest))
+				.flatten()
+				.value();
 			
-			playlist = Playlist(_.map(song_nos, function(no) {return songs[no].key}));
+			playlist = Playlist(_(songs).map(function(song) {return song.key}));
 			change_song(Utils.url(main_bucket, playlist.current()));
 		}
 		
