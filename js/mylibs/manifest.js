@@ -54,7 +54,7 @@ Manifest = function(bucket) {
 		keys: function() { return structure.meta.keys },
 		add_key: function(key) { structure.meta.keys.push(key) }, // look (in JS: TGP) for how to make this private
 		
-		add_song: function(opts) { // title, album, artist, key, callback(song_opts, db)
+		add_song: function(opts) { // track, title, album, artist, key, callback(song_opts, db)
 			if (!this.syncd) { // haven't grabbed the file
 				var that = this;
 				this.sync(function() {
@@ -65,11 +65,10 @@ Manifest = function(bucket) {
 					this.db[opts.artist] = {};
 				
 				if (!this.db[opts.artist][opts.album])
-					this.db[opts.artist][opts.album] = [];
-				db_album = this.db[opts.artist][opts.album]
+					this.db[opts.artist][opts.album] = {};
+				db_album = this.db[opts.artist][opts.album];
 				
-				// BUG: Not currently being put in order or necessarily unique
-				db_album.push({title: opts.title, key: opts.key});
+				db_album[opts.track] = {title: opts.title, key: opts.key};
 				this.add_key(opts.key);
 				if (opts.callback) {
 					opts.callback({title: opts.title, album: opts.album, artist: opts.artist, key: opts.key}, this.db);

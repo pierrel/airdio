@@ -95,6 +95,11 @@
 	<script src="js/libs/S3Ajax.js" type="text/javascript" charset="utf-8"></script>
 	<!-- end S3 scripts -->
 	
+	<!-- MY FAVORITE SCRIPT -->
+	<script src="js/libs/underscore.min.js" type="text/javascript" charset="utf-8"></script>
+	<!-- end MY FAVORITE SCRIPT -->
+	
+	
 	<!-- ID3tag scripts -->
     <script src="js/libs/stringutils.js" type="text/javascript" charset="utf-8"></script>
     <script src="js/libs/bufferedbinaryajax.js" type="text/javascript" charset="utf-8"></script>
@@ -113,7 +118,7 @@
 	<script src="js/mylibs/playlist.js" type="text/javascript" charset="utf-8"></script>
 	<!-- end app scripts -->
 	
-	<script type="text/javascript" charset="utf-8">	
+	<script type="text/javascript" charset="utf-8">		
 		var manifest = null;
 		var playlist = Playlist([]);
 		var main_bucket = '';		
@@ -155,15 +160,20 @@
 								ID3.loadTags(Utils.url(bucket_name, key), function() {
 								    var tags = ID3.getAllTags(Utils.url(bucket_name, key));
 									if (tags) {
-										manifest.add_song({
-											title: tags.title,
-											artist: tags.artist,
-											album: tags.album,
-											key: key,
-											callback: function(song, db) {
-												generate_list(bucket_name, db);
-											}
-										});
+										try {
+											manifest.add_song({
+												title: tags.title,
+												artist: tags.artist,
+												album: tags.album,
+												track: parseInt(tags.track.split('/')[0]),
+												key: key,
+												callback: function(song, db) {
+													generate_list(bucket_name, db);
+												}
+											});
+										} catch (err) {
+											console.log('error getting track for ' + tags.title + ', ' + err);
+										}
 									}
 								});
 							})(key);
@@ -247,10 +257,18 @@
 						}
 					})(artist, album));
 					
-					for (i=0; i<db[artist][album].length; i++) {
-						var song = db[artist][album][i];
+					// order the tracks
+					var tracks = [];
+					for(var track_no in db[artist][album]) {
+						tracks.push(track_no);
+					}
+					tracks.sort();
+					
+					for (i=0; i<tracks.length; i++) {
+						var track_no = tracks[i];
+						var song = db[artist][album][track_no];
 						var li = $('<li>')
-						var a = $('<a>', {href: '#'}).html(song.title);
+						var a = $('<a>', {href: '#'}).html(track_no + '. ' + song.title);
 						a.click((function(bucket, key) {
 							return function() {
 								change_song(Utils.url(bucket, key));
