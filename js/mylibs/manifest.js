@@ -3,9 +3,11 @@ Manifest = function(bucket) {
 	var filename = 'manifest.json';
 	var structure = { // the default file structure
 		meta: { // meta-information
-			version: 1,
+			version: 2,
 			dirty: false, // whether the file has been changed
-			keys: [] // a cache of all keys in the bucket
+			keys: [], // an array of all song keys in the bucket
+			key_hash: {} // a hash key -> {artist, album, track} of all keys
+			
 		},
 		song_db: {} // the actual artist/album/song structure
 	};
@@ -26,10 +28,16 @@ Manifest = function(bucket) {
 				}
 			}
 			
-			if (file_found) { // get it
+			if (file_found) { // grab it
 				S3Ajax.get(bucket, filename, function(req, resp) {
-					var structure = JSON.parse(resp);
-					callback(structure.song_db);
+					var manifest_structure = JSON.parse(resp);
+					if (manifest_structure.meta.version != structure.meta.version) { // just blow it away, needs to be rebuilt
+						S3Ajax.put(bucket, filename, JSON.stringify(structure), {}, function(req, obj) {
+							callback(structure.song_db);
+						});
+					} else { // use it
+						callback(structure.song_db);
+					}
 				}, function(req, obj) {
 					throw "InvalidCreds";
 				});
@@ -52,8 +60,25 @@ Manifest = function(bucket) {
 		dirty: true,
 		db: {},
 		keys: function() { return structure.meta.keys },
-		add_key: function(key) { structure.meta.keys.push(key) }, // look (in JS: TGP) for how to make this private
+		add_key: function(opts) { // key, artist, album, track 
+			structure.meta.keys.push(opts.key);
+			structure.meta.key_hash[opts.key] = {artist: opts.artist, album: opts.album, track: opts.track};
+		},
 		
+		song_for_key: function(key) {
+			if (structure.meta.keys.indexOf(key) == -1) {
+				throw 'key \'' + key + '\' not found';
+			} else {
+				var info = structure.meta.key_hash[key];
+				return Song({
+					key: key,
+					track: info.track,
+					title: this.db[info.artist][info.album][info.track].title,
+					album: info.album,
+					artist: info.artist
+				});
+			}
+		},
 		arists: function() {
 			var result = [];
 			for(var artist in this.db) {
@@ -110,7 +135,7 @@ Manifest = function(bucket) {
 				db_album = this.db[opts.artist][opts.album];
 				
 				db_album[opts.track] = {title: opts.title, key: opts.key};
-				this.add_key(opts.key);
+				this.add_key(opts);
 				if (opts.callback) {
 					opts.callback({title: opts.title, album: opts.album, artist: opts.artist, key: opts.key}, this.db);
 				}
