@@ -122,7 +122,7 @@
 	<script type="text/javascript" charset="utf-8">				
 		var manifest = null;
 		var playlist = Playlist([]);
-		var main_bucket = '';				
+		var main_bucket = '';						
 		
 		var from_step_1 = function() {
 			// get info
@@ -151,11 +151,10 @@
 			main_bucket = bucket_name;
 			manifest = Manifest(bucket_name);
 			
-			console.log('syncing!');
 			manifest.sync({
 				update: true,
 				callback: function() {
-					console.log('done syncing!');
+					generate_list(bucket_name, manifest.db);
 				}
 			});
 			

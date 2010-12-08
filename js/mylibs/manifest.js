@@ -1,6 +1,6 @@
 // Requires utils.js, underscore.js, json2.js, and S3Ajax.js (with S3Ajax object initialized with key and secret)
 Manifest = function(bucket) {
-	var filename = 'manifest.json';
+	var filename = 'airdio_manifest.json';
 	var structure = { // the default file structure
 		meta: { // meta-information
 			version: 2,
@@ -36,6 +36,7 @@ Manifest = function(bucket) {
 							callback(structure.song_db);
 						});
 					} else { // use it
+						structure = manifest_structure;
 						callback(structure.song_db);
 					}
 				}, function(req, obj) {
@@ -169,6 +170,10 @@ Manifest = function(bucket) {
 					
 					if (opts.update)
 						that.update(opts.callback);
+					else if (opts.callback)
+						callback();
+						
+						
 				});
 			}
 		},
@@ -184,39 +189,49 @@ Manifest = function(bucket) {
 				.value());
 								
 				var keys_left = new_keys.length;
-				var new_songs = [];
-				for(i=0; i < new_keys.length; i++) {
-					var key = new_keys[i];
-					// grab the tags
-					(function(key, bucket_name) {
-						ID3.loadTags(Utils.url(bucket_name, key), function() {
-						    var tags = ID3.getAllTags(Utils.url(bucket_name, key));
-							if (tags) {
-								try {
-									new_songs.push({
-										title: tags.title,
-										artist: tags.artist,
-										album: tags.album,
-										track: parseInt(tags.track.split('/')[0]),
-										key: key,
-									});
-								} catch (err) {
-									console.log('error getting track for ' + tags.title + ', ' + err);
+				
+				if (keys_left != 0) {
+					var new_songs = [];
+					for(i=0; i < new_keys.length; i++) {
+						var key = new_keys[i];
+						// grab the tags
+						(function(key, bucket_name) {
+							ID3.loadTags(Utils.url(bucket_name, key), function() {
+							    var tags = ID3.getAllTags(Utils.url(bucket_name, key));
+								if (tags) {
+									try {
+										new_songs.push({
+											title: tags.title,
+											artist: tags.artist,
+											album: tags.album,
+											track: parseInt(tags.track.split('/')[0]),
+											key: key,
+										});
+									} catch (err) {
+										console.log('error getting track for ' + tags.title + ', ' + err);
+									}
 								}
-							}
 							
-							// whether or not we added the song, decrement and check if we're the last
-							keys_left -= 1;
-							if (keys_left == 0) {
-								for (j=0; j < new_songs.length; j++) {
-									that.add_song(new_songs[j]);
+								// whether or not we added the song, decrement and check if we're the last
+								keys_left -= 1;
+								if (keys_left == 0) {
+									for (j=0; j < new_songs.length; j++) {
+										that.add_song(new_songs[j]); // we waited to put songs at this point 
+									}								 // so that calls don't step on each other
+									
+									save_db(that.db, function(saved_db){
+										if (callback) callback();
+									});
+									
 								}
-								if (callback) callback();
-							}
-						});
-					})(key, that.bucket);
+							});
+						})(key, that.bucket);
+					}
+				} else if (callback) {
+					callback();
 				}
 			});
 		}
+	
 	}
 }
