@@ -93,23 +93,16 @@ Manifest = function(bucket) {
 			}
 		},
 		artists: function() {
-			var result = [];
-			for(var artist in this.db) {
-				result.push(artist);
-			}
-			
-			result.sort();
-			return result;
+			return _(this.db).chain()
+				.keys()
+				.sortBy(_.identity)
+				.value();
 		},
 		artist_albums: function(artist_name) {
-			
-			var result = [];
-			for(var album in this.db[artist_name]) {
-				result.push(album);
-			}
-			
-			result.sort();
-			return result;
+			return _(this.db[artist_name]).chain()
+				.keys()
+				.sortBy(_.identity)
+				.value();
 		},
 		artist_album_songs: function(artist, album) {
 			return _(this.db[artist][album]).chain()
