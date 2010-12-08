@@ -122,8 +122,8 @@
 	<script type="text/javascript" charset="utf-8">				
 		var manifest = null;
 		var playlist = Playlist([]);
-		var main_bucket = '';
-				
+		var main_bucket = '';				
+		
 		var from_step_1 = function() {
 			// get info
 			if (S3Ajax.KEY_ID.length == 0)
@@ -150,38 +150,14 @@
 		var from_step_2 = function(bucket_name) {	
 			main_bucket = bucket_name;
 			manifest = Manifest(bucket_name);
-			// get all the keys and make sure the manifest has them, yeah it's disgusting I know...
-			manifest.sync(function() {
-				S3Ajax.listKeys(bucket_name, {}, function(req, obj) {
-					for(i=0; i < obj.ListBucketResult.Contents.length; i++) {
-						var key = obj.ListBucketResult.Contents[i].Key;
-						if (key.match(/mp3$/) && manifest.keys().indexOf(key) == -1) {
-							// grab the tags
-							(function(key) {
-								ID3.loadTags(Utils.url(bucket_name, key), function() {
-								    var tags = ID3.getAllTags(Utils.url(bucket_name, key));
-									if (tags) {
-										try {
-											manifest.add_song({
-												title: tags.title,
-												artist: tags.artist,
-												album: tags.album,
-												track: parseInt(tags.track.split('/')[0]),
-												key: key,
-												callback: function(song, db) {
-													generate_list(bucket_name, db);
-												}
-											});
-										} catch (err) {
-											console.log('error getting track for ' + tags.title + ', ' + err);
-										}
-									}
-								});
-							})(key);
-						}
-					}
-				})
-			})
+			
+			console.log('syncing!');
+			manifest.sync({
+				update: true,
+				callback: function() {
+					console.log('done syncing!');
+				}
+			});
 			
 			$('#step2').slideUp();
 			$('#instructions').html('Choose a song');

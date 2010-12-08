@@ -11,5 +11,5 @@ Utils = {
 	
 	numsort: function(i, j) {
 		return i - j;
-	}
+	}	
 }

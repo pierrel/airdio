@@ -1,4 +1,4 @@
-// Requires json2.js and S3Ajax.js (with S3Ajax object initialized with key and secret)
+// Requires utils.js, underscore.js, json2.js, and S3Ajax.js (with S3Ajax object initialized with key and secret)
 Manifest = function(bucket) {
 	var filename = 'manifest.json';
 	var structure = { // the default file structure
@@ -50,6 +50,15 @@ Manifest = function(bucket) {
 		}, function(req, obj) {
 			throw "InvalidCreds";
 		});
+	}
+	
+	var unhandled_special_characters = ["é"];
+	var has_special_characters = function(string) {
+		return !_(string).chain()
+			.toArray()
+			.intersect(unhandled_special_characters)
+			.isEmpty()
+			.value();
 	}
 	
 	
@@ -120,11 +129,14 @@ Manifest = function(bucket) {
 			return result;
 		},
 		
-		add_song: function(opts) { // track, title, album, artist, key, callback(song_opts, db)
+		add_song: function(opts) { // track, title, album, artist, key
 			if (!this.syncd) { // haven't grabbed the file
 				var that = this;
-				this.sync(function() {
-					that.add_song(opts);
+				this.sync({
+					update: false,
+					callback: function() {
+						return that.add_song(opts);
+					}
 				});
 			} else { // we know we have a db
 				if (!this.db[opts.artist])
@@ -137,13 +149,12 @@ Manifest = function(bucket) {
 				db_album[opts.track] = {title: opts.title, key: opts.key};
 				this.add_key(opts);
 				if (opts.callback) {
-					opts.callback({title: opts.title, album: opts.album, artist: opts.artist, key: opts.key}, this.db);
+					return {title: opts.title, album: opts.album, artist: opts.artist, key: opts.key}
 				}
 			}
 		},
-		sync: function(callback) { // function()
+		sync: function(opts) { // update, callback()
 			if (this.syncd) {
-				var that = this;
 				save_db(this.db, function() {
 					that.dirty = false;
 					if (callback)
@@ -155,10 +166,57 @@ Manifest = function(bucket) {
 					that.db = db;
 					that.syncd = true;
 					that.dirty = false;
-					if (callback)
-						callback();
+					
+					if (opts.update)
+						that.update(opts.callback);
 				});
 			}
+		},
+		
+		update: function(callback) { // function()
+			var that = this;
+			S3Ajax.listKeys(this.bucket, {}, function(req, obj) {
+				var new_keys = _(that.keys()).reduce(function(memo, cur) {
+					return _(memo).without(cur);
+				}, _(obj.ListBucketResult.Contents).chain()
+				.map(function(content) { return content.Key})
+				.select(function(key) {return key.match(/mp3$/) && !has_special_characters(key)})
+				.value());
+								
+				var keys_left = new_keys.length;
+				var new_songs = [];
+				for(i=0; i < new_keys.length; i++) {
+					var key = new_keys[i];
+					// grab the tags
+					(function(key, bucket_name) {
+						ID3.loadTags(Utils.url(bucket_name, key), function() {
+						    var tags = ID3.getAllTags(Utils.url(bucket_name, key));
+							if (tags) {
+								try {
+									new_songs.push({
+										title: tags.title,
+										artist: tags.artist,
+										album: tags.album,
+										track: parseInt(tags.track.split('/')[0]),
+										key: key,
+									});
+								} catch (err) {
+									console.log('error getting track for ' + tags.title + ', ' + err);
+								}
+							}
+							
+							// whether or not we added the song, decrement and check if we're the last
+							keys_left -= 1;
+							if (keys_left == 0) {
+								for (j=0; j < new_songs.length; j++) {
+									that.add_song(new_songs[j]);
+								}
+								if (callback) callback();
+							}
+						});
+					})(key, that.bucket);
+				}
+			});
 		}
 	}
 }
