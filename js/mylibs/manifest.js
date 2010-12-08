@@ -75,6 +75,9 @@ Manifest = function(bucket) {
 			structure.meta.key_hash[opts.key] = {artist: opts.artist, album: opts.album, track: opts.track};
 		},
 		
+		//
+		// Querying
+		//
 		song_for_key: function(key) {
 			if (structure.meta.keys.indexOf(key) == -1) {
 				throw 'key \'' + key + '\' not found';
@@ -89,7 +92,7 @@ Manifest = function(bucket) {
 				});
 			}
 		},
-		arists: function() {
+		artists: function() {
 			var result = [];
 			for(var artist in this.db) {
 				result.push(artist);
@@ -99,6 +102,7 @@ Manifest = function(bucket) {
 			return result;
 		},
 		artist_albums: function(artist_name) {
+			
 			var result = [];
 			for(var album in this.db[artist_name]) {
 				result.push(album);
@@ -108,28 +112,23 @@ Manifest = function(bucket) {
 			return result;
 		},
 		artist_album_songs: function(artist, album) {
-			var result = [];
-			var sorted_nos = [];
-			var db_songs = this.db[artist][album];
-			for(var song_no in db_songs) {
-				sorted_nos.push(song_no);
-			}
-			sorted_nos.sort(function(i, j){return i-j});
-			
-			for (i=0; i < sorted_nos.length; i++) {
-				var song_no = sorted_nos[i];
-				result.push(Song({
-					key: db_songs[song_no].key,
-					track: song_no,
-					title: db_songs[song_no].title,
-					artist: artist,
-					album: album
-				}));
-			}
-			
-			return result;
+			return _(this.db[artist][album]).chain()
+				.map(function(attrs, track) {
+					return Song({
+						key: attrs.key,
+						track: parseInt(track),
+						title: attrs.title,
+						artist: artist,
+						album: album
+					})
+				})
+				.sortBy(function(song) { return song.track })
+				.value();
 		},
 		
+		//
+		// Modifying internal DB
+		//
 		add_song: function(opts) { // track, title, album, artist, key
 			if (!this.syncd) { // haven't grabbed the file
 				var that = this;
@@ -154,6 +153,10 @@ Manifest = function(bucket) {
 				}
 			}
 		},
+		
+		//
+		// Syncing and Updating with S3
+		//
 		sync: function(opts) { // update, callback()
 			if (this.syncd) {
 				save_db(this.db, function() {
@@ -177,7 +180,6 @@ Manifest = function(bucket) {
 				});
 			}
 		},
-		
 		update: function(callback) { // function()
 			var that = this;
 			S3Ajax.listKeys(this.bucket, {}, function(req, obj) {
