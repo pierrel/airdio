@@ -168,9 +168,7 @@
 		var change_playlist = function() {
 			var audio = document.getElementById('playa-play');
 			
-			
 			audio.pause();
-			
 		}
 		
 		var change_song = function(src) {
@@ -239,6 +237,18 @@
 		audio.addEventListener('canplay', function() {
 			audio.play();
 		});
+		
+		// playback
+		$('.artist').live('click', function() {
+			queue_artist_playlist($(this).data('artist'));
+		});
+		$('.album').live('click', function() {
+			var album_a = $(this);
+			queue_album_playlist(album_a.parent().parent().parent().find('.artist').data('artist'), album_a.data('album'));
+		});
+		$('.song').live('click', function() {
+			change_song(Utils.url(main_bucket, this.id));
+		})		
 	</script>
 </body>
 </html>
