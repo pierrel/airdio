@@ -114,6 +114,7 @@
 	
 	<!-- app scripts -->
 	<script src="js/mylibs/song.js" type="text/javascript" charset="utf-8"></script>
+	<script src="js/mylibs/navigation.js" type="text/javascript" charset="utf-8"></script>
 	<script src="js/mylibs/manifest.js" type="text/javascript" charset="utf-8"></script>
 	<script src="js/mylibs/utils.js" type="text/javascript" charset="utf-8"></script>
 	<script src="js/mylibs/playlist.js" type="text/javascript" charset="utf-8"></script>
@@ -122,8 +123,9 @@
 	<script type="text/javascript" charset="utf-8">				
 		var manifest = null;
 		var playlist = Playlist([]);
-		var main_bucket = '';						
-		
+		var navigation = Navigation($('#songs'));
+		var main_bucket = '';
+				
 		var from_step_1 = function() {
 			// get info
 			if (S3Ajax.KEY_ID.length == 0)
@@ -199,15 +201,14 @@
 		
 		var	generate_list = function(bucket, db) {
 			$('#songs').empty();
-			var list = $('#songs');
 
 			for (var artist in db) {
 				var artist_li = $('<li>');
 				var artist_a = $('<a>', {href: "#"}).html(artist);
 				var artist_ul = $('<ul>');
 				artist_li.append(artist_a);
-				list.append(artist_li);
-				list.append(artist_ul);
+				navigation.root.append(artist_li);
+				navigation.root.append(artist_ul);
 				
 				artist_a.click((function(artist) {
 					return function() {
@@ -230,24 +231,11 @@
 					})(artist, album));
 					
 					// order the tracks
-					var tracks = [];
-					for(var track_no in db[artist][album]) {
-						tracks.push(track_no);
-					}
-					tracks.sort(function(i, j){ return i - j;})
-					
-					for (i=0; i<tracks.length; i++) {
-						var track_no = tracks[i];
-						var song = db[artist][album][track_no];
-						var li = $('<li>')
-						var a = $('<a>', {href: '#'}).html(track_no + '. ' + song.title);
-						a.click((function(bucket, key) {
-							return function() {
-								change_song(Utils.url(bucket, key));
-							}
-						})(bucket, song.key));
-						li.append(a);
-						album_ul.append(li);
+					var songs = manifest.artist_album_songs(artist, album);
+					for (i=0; i<songs.length; i++) {
+						var song = songs[i];
+						
+						album_ul.append(navigation.song_el(song));
 					}
 				}
 			}
