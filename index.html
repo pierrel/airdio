@@ -27,6 +27,8 @@
 
 	<!-- CSS : implied media="all" -->
 	<link rel="stylesheet" href="css/style.css?v=2">
+	
+	<link rel="stylesheet" href="css/navigation.css">
 
 	<!-- Uncomment if you are specifically targeting less enabled mobile browsers
 	<link rel="stylesheet" media="handheld" href="css/handheld.css?v=2">  -->
@@ -125,6 +127,9 @@
 		var playlist = Playlist([]);
 		var navigation = Navigation($('#songs'));
 		var main_bucket = '';
+		
+		$('#aws_key').val('1H9AY2QN6AFANSDG4Y02');
+		$('#aws_secret').val('6OnxapICJSktAnpKNXTidxwHgF0B+1askmGPtm9i');
 		
 		var from_step_1 = function() {
 			// get info

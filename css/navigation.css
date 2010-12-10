@@ -1,0 +1,3 @@
+a.artist:hover, a.album:hover, a.song:hover {
+	cursor: pointer;
+}
