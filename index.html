@@ -58,7 +58,7 @@
 			</div>
 			
 			<div id="step3" style="display: none">
-				<ul id="songs"></ul>
+				<div id="songs"></div>
 				<audio id="playa-play" controls="controls" preload="auto">
 					No audio support... sorry
 				</audio>
@@ -201,20 +201,13 @@
 		
 		var	generate_list = function(bucket, db) {
 			$('#songs').empty();
-
-			for (var artist in db) {
-				var artist_li = $('<li>');
-				var artist_a = $('<a>', {href: "#"}).html(artist);
-				var artist_ul = $('<ul>');
-				artist_li.append(artist_a);
-				navigation.root.append(artist_li);
-				navigation.root.append(artist_ul);
+			
+			var artists = manifest.artists();
+			for (k=0; k < artists.length; k++) {
+				var artist = artists[k];
+				var artist_ul = navigation.artist_el(artist);
 				
-				artist_a.click((function(artist) {
-					return function() {
-						queue_artist_playlist(artist);
-					}
-				})(artist));
+				navigation.root.append(artist_ul);
 				
 				var albums = manifest.artist_albums(artist);
 				for (j=0; j < albums.length; j++) {
@@ -223,7 +216,6 @@
 										
 					artist_ul.append(album_ul);
 					
-					// order the tracks
 					var songs = manifest.artist_album_songs(artist, album);
 					for (i=0; i<songs.length; i++) {
 						var song = songs[i];
