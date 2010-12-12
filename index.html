@@ -47,6 +47,7 @@
 		
 		<div id="main">
 			<h2 id="instructions">Enter your Credentials</h2><br>
+			<div id="notifications"></div>
 			<div id="step1">
 				<form>
 					<label for="aws_key">AWS Key</label><input type="text" name="key" id="aws_key" /><br />
@@ -127,7 +128,7 @@
 		var playlist = Playlist([]);
 		var navigation = Navigation($('#songs'));
 		var main_bucket = '';
-		
+					
 		var from_step_1 = function() {
 			// get info
 			if (S3Ajax.KEY_ID.length == 0)
@@ -154,10 +155,14 @@
 		var from_step_2 = function(bucket_name) {	
 			main_bucket = bucket_name;
 			manifest = Manifest(bucket_name);
+			manifest.song_loaded(function(song) {
+				$('#notifications').html("Loaded " + song.title + " by " + song.artist);
+			});
 			
 			manifest.sync({
 				update: true,
 				callback: function() {
+					$('#notifications').empty();
 					generate_list(bucket_name, manifest.db);
 				}
 			});

@@ -76,6 +76,14 @@ Manifest = function(bucket) {
 		},
 		
 		//
+		// Events
+		//
+		song_loaded_fn: null,
+		song_loaded: function(fn) { // function(song)
+			this.song_loaded_fn = fn;
+		},
+		
+		//
 		// Querying
 		//
 		song_for_key: function(key) {
@@ -195,13 +203,17 @@ Manifest = function(bucket) {
 							    var tags = ID3.getAllTags(Utils.url(bucket_name, key));
 								if (tags) {
 									try {
-										new_songs.push({
+										var new_song = {
 											title: tags.title,
 											artist: tags.artist,
 											album: tags.album,
 											track: parseInt(tags.track.split('/')[0]),
 											key: key,
-										});
+										};
+										new_songs.push(new_song);
+										if (that.song_loaded_fn) {
+											that.song_loaded_fn(Song(new_song));
+										}
 									} catch (err) {
 										console.log('error getting track for ' + tags.title + ', ' + err);
 									}
