@@ -1,3 +1,8 @@
 a.artist:hover, a.album:hover, a.song:hover {
 	cursor: pointer;
 }
+
+#art {
+	float: right;
+	border: 1px solid black;
+}

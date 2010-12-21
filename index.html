@@ -51,7 +51,8 @@
 			<div id="step1">
 				<form>
 					<label for="aws_key">AWS Key</label><input type="text" name="key" id="aws_key" /><br />
-					<label for="aws_secret">AWS Secret</label><input type="text" name="secret" id="aws_secret" /><br /><br />
+					<label for="aws_secret">AWS Secret</label><input type="text" name="secret" id="aws_secret" /><br />
+					<label for="last_key">Last.fm key (for album art)</label><input type="text" name="last_key" id="last_key" /><br /><br />
 					<input type="button" value="continue" onclick="from_step_1()" />
 				</form>
 			</div>
@@ -61,6 +62,9 @@
 			</div>
 			
 			<div id="step3" style="display: none">
+				<div id="art">
+					
+				</div>
 				<div id="songs"></div>
 				<audio id="playa-play" controls="controls" preload="auto">
 					No audio support... sorry
@@ -114,6 +118,11 @@
     <script src="js/libs/id4.js" type="text/javascript" charset="utf-8"></script>
 	<!-- end ID3tag scripts -->
 	
+	<!-- Last.fm scripts -->
+	<script type="text/javascript" src="js/libs/lastfm.api.md5.js"></script>
+	<script type="text/javascript" src="js/libs/lastfm.api.js"></script>
+	<!-- end Last.fm scripts -->
+	
 	
 	<!-- app scripts -->
 	<script src="js/mylibs/song.js" type="text/javascript" charset="utf-8"></script>
@@ -128,13 +137,16 @@
 		var playlist = Playlist([]);
 		var navigation = Navigation($('#songs'));
 		var main_bucket = '';
-					
+		var lastfm = null;		
+		
 		var from_step_1 = function() {
 			// get info
 			if (S3Ajax.KEY_ID.length == 0)
 				S3Ajax.KEY_ID = $('#aws_key').val();
 			if (S3Ajax.SECRET_KEY.length == 0)
 				S3Ajax.SECRET_KEY = $('#aws_secret').val();
+			if (lastfm == null)
+				lastfm = new LastFM({apiKey: $('#last_key').val(), secret: 'nothin'});
 			
 			// move to next step
 			S3Ajax.listBuckets(function(request, obj) {
@@ -178,18 +190,37 @@
 			audio.pause();
 		}
 		
-		var change_song = function(src) {
+		var change_song = function(song_key) {
+			var song = manifest.song_for_key(song_key);
 			var audio = document.getElementById('playa-play');
+			var art = $('#art');
 			
 			audio.pause();
-			audio.setAttribute('src', src);
+			audio.setAttribute('src', Utils.url(main_bucket, song_key));
+			
+			art.fadeOut(500, function() {
+				art.empty();
+				
+				lastfm.album.getInfo({artist: song.artist, album: song.album}, {
+					success: function(data) {
+						var image = $('<img>', {src: data.album.image[3]['#text']});
+						art.append(image);
+						image.load(function() {
+							art.fadeIn();
+						});
+					},
+					error: function(code, message) {
+						console.log('code: ' + code + ', message: ' + message);
+					}
+				});
+			});
 		}
 		
 		var queue_album_playlist = function(artist, album) {
 			var songs = manifest.artist_album_songs(artist, album);
 			
 			playlist = Playlist(_(songs).map(function(song) {return song.key}));
-			change_song(Utils.url(main_bucket, playlist.current()));
+			change_song(playlist.current());
 		}
 		
 		var queue_artist_playlist = function(artist) {
@@ -201,7 +232,7 @@
 				.value();
 			
 			playlist = Playlist(_(songs).map(function(song) {return song.key}));
-			change_song(Utils.url(main_bucket, playlist.current()));
+			change_song(playlist.current());
 		}
 		
 		var	generate_list = function(bucket, db) {
@@ -254,7 +285,7 @@
 			queue_album_playlist(album_a.parent().parent().parent().find('.artist').data('artist'), album_a.data('album'));
 		});
 		$('.song').live('click', function() {
-			change_song(Utils.url(main_bucket, this.id));
+			change_song(this.id);
 		})		
 	</script>
 </body>
