@@ -66,7 +66,7 @@
 					
 				</div>
 				<div id="songs"></div>
-				<audio id="playa-play" controls="controls" preload="auto">
+				<audio id="playa-play" preload="auto">
 					No audio support... sorry
 				</audio>
 			</div>
@@ -123,6 +123,10 @@
 	<script type="text/javascript" src="js/libs/lastfm.api.js"></script>
 	<!-- end Last.fm scripts -->
 	
+	<!-- audio js lib -->
+	<script type="text/javascript" src="js/libs/audiojs/audio.min.js"></script>
+	<!-- end audio js lib -->
+	
 	
 	<!-- app scripts -->
 	<script src="js/mylibs/song.js" type="text/javascript" charset="utf-8"></script>
@@ -137,8 +141,18 @@
 		var playlist = Playlist([]);
 		var navigation = Navigation($('#songs'));
 		var main_bucket = '';
-		var lastfm = null;	
-					
+		var lastfm = null;
+		var a = audiojs.createAll({
+			autoplay: true,
+			trackEnded: function() {
+				var new_song = playlist.next();
+				if (new_song) {
+					audio.load(Utils.url(main_bucket, new_song));
+				}
+			}
+		});
+		var audio = a[0];
+							
 		var from_step_1 = function() {
 			// get info
 			if (S3Ajax.KEY_ID.length == 0)
@@ -183,20 +197,13 @@
 			$('#instructions').html('Choose a song');
 			$('#step3').slideDown();
 		}
-		
-		var change_playlist = function() {
-			var audio = document.getElementById('playa-play');
-			
-			audio.pause();
-		}
-		
+				
 		var change_song = function(song_key) {
 			var song = manifest.song_for_key(song_key);
-			var audio = document.getElementById('playa-play');
 			var art = $('#art');
 			
 			audio.pause();
-			audio.setAttribute('src', Utils.url(main_bucket, song_key));
+			audio.load(Utils.url(main_bucket, song_key));
 			
 			art.fadeOut(500, function() {
 				art.empty();
@@ -205,7 +212,6 @@
 					success: function(data) {
 						try {
 							var image = $('<img>', {src: data.album.image[3]['#text']});
-							throw('this did not work');
 							art.append(image);
 							image.load(function() {
 								art.fadeIn();
@@ -274,22 +280,8 @@
 				}
 			}
 		}
-		
-		// Events
-		var audio = document.getElementById('playa-play');
-		
-		audio.addEventListener('ended', function() {
-			var new_song = playlist.next();
-			if (new_song) {
-				change_song(Utils.url(main_bucket, new_song));
-			}
-		});
-		
-		audio.addEventListener('canplay', function() {
-			audio.play();
-		});
-		
-		// playback
+						
+		// playback selection
 		$('.artist').live('click', function() {
 			queue_artist_playlist($(this).data('artist'));
 		});
