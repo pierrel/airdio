@@ -137,8 +137,8 @@
 		var playlist = Playlist([]);
 		var navigation = Navigation($('#songs'));
 		var main_bucket = '';
-		var lastfm = null;		
-		
+		var lastfm = null;	
+					
 		var from_step_1 = function() {
 			// get info
 			if (S3Ajax.KEY_ID.length == 0)
@@ -203,14 +203,27 @@
 				
 				lastfm.album.getInfo({artist: song.artist, album: song.album}, {
 					success: function(data) {
-						var image = $('<img>', {src: data.album.image[3]['#text']});
+						try {
+							var image = $('<img>', {src: data.album.image[3]['#text']});
+							throw('this did not work');
+							art.append(image);
+							image.load(function() {
+								art.fadeIn();
+							});
+						} catch(err) {
+							var image = $('<img>', {src: 'images/missing.png'})
+							art.append(image);
+							image.load(function() {
+								art.fadeIn();
+							});
+						}
+					},
+					error: function(code, message) {
+						var image = $('<img>', {src: 'images/missing.png'})
 						art.append(image);
 						image.load(function() {
 							art.fadeIn();
 						});
-					},
-					error: function(code, message) {
-						console.log('code: ' + code + ', message: ' + message);
 					}
 				});
 			});
