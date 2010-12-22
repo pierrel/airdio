@@ -2,7 +2,9 @@ a.artist:hover, a.album:hover, a.song:hover {
 	cursor: pointer;
 }
 
-#art {
+#songs {
+	height: 650px;
+	width: 300px;
+	overflow: auto;
 	float: right;
-	border: 1px solid black;
 }

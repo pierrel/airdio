@@ -62,13 +62,18 @@
 			</div>
 			
 			<div id="step3" style="display: none">
+				<div id="songs"></div>
+				
 				<div id="art">
 					
 				</div>
-				<div id="songs"></div>
+
+				<div id="current-song"></div>
 				<audio id="playa-play" preload="auto">
 					No audio support... sorry
 				</audio>
+				
+				<div id="playlist"></div>
 			</div>
 		</div>
 
@@ -145,14 +150,16 @@
 		var a = audiojs.createAll({
 			autoplay: true,
 			trackEnded: function() {
-				var new_song = playlist.next();
-				if (new_song) {
-					audio.load(Utils.url(main_bucket, new_song));
+				var new_song_key = playlist.next();
+				if (new_song_key) {
+					audio.load(Utils.url(main_bucket, new_song_key));
+				} else {
+					audio.pause();
 				}
 			}
 		});
 		var audio = a[0];
-							
+		
 		var from_step_1 = function() {
 			// get info
 			if (S3Ajax.KEY_ID.length == 0)
@@ -238,7 +245,7 @@
 		var queue_album_playlist = function(artist, album) {
 			var songs = manifest.artist_album_songs(artist, album);
 			
-			playlist = Playlist(_(songs).map(function(song) {return song.key}));
+			playlist.replace_with(_(songs).map(function(song) {return song.key}));
 			change_song(playlist.current());
 		}
 		
@@ -250,7 +257,7 @@
 				.flatten()
 				.value();
 			
-			playlist = Playlist(_(songs).map(function(song) {return song.key}));
+			playlist.replace_with(_(songs).map(function(song) {return song.key}));
 			change_song(playlist.current());
 		}
 		
@@ -280,6 +287,26 @@
 				}
 			}
 		}
+		
+		// playlist drawing
+		playlist.changed(function(song_keys, index) {
+			$('#current-song').empty();
+			$('#playlist').empty();
+			
+			// put the current song above the player
+			var current_song = manifest.song_for_key(song_keys[index]);
+			$('#current-song').html(current_song.artist + ' – ' + current_song.title);
+			
+			// redraw the playlist
+			var songs = _(_.range(index+1, song_keys.length)).map(function(i) { return manifest.song_for_key(song_keys[i])});
+			var list = $('<ul>').append(_(songs).chain()
+											.map(function(song) {
+												return song.artist + ' – ' + song.title;
+											})
+											.reduce(function(memo, song_desc) { return memo + '<li>' + song_desc + '</li>'}, '')
+											.value());
+			$('#playlist').append(list);
+		});
 						
 		// playback selection
 		$('.artist').live('click', function() {
