@@ -269,7 +269,9 @@ Manifest = function(opts) {
 								// get the genre tags
 								lastfm.track.getTopTags({track: new_song.title, artist: new_song.artist, autocorrect: 1}, {
 									success: function(data) {
-										new_song.tags = _(data.toptags.tag).map(function(tag){ return tag.name });
+										var tags = data.toptags.tag;
+										if (tags)
+											new_song.tags = _(tags).map(function(tag){ return tag.name });
 										
 										save_and_check(new_song);
 									},
