@@ -74,6 +74,7 @@
 				</audio>
 				
 				<div id="playlist"></div>
+				<div id="tag-cloud"></div>
 			</div>
 		</div>
 
@@ -159,7 +160,7 @@
 			}
 		});
 		var audio = a[0];
-								
+										
 		var from_step_1 = function() {
 			// get info
 			if (S3Ajax.KEY_ID.length == 0)
@@ -197,6 +198,7 @@
 				callback: function() {
 					$('#notifications').empty();
 					generate_list(bucket_name, manifest.db);
+					generate_tag_cloud();
 				}
 			});
 			
@@ -286,6 +288,18 @@
 					}
 				}
 			}
+		}
+		
+		var generate_tag_cloud = function() {
+			$('#tag-cloud').empty();
+			var list = $('<ul>');
+			cloud_list_string = _(manifest.tag_cloud).chain()
+						.map(function(key_list, tag_name) { return {name: tag_name, keys: key_list.length} })
+						.sortBy(function(tag_hash) { return tag_hash.keys * -1 })
+						.reduce(function(memo, tag_hash) { return memo + '<li>' + tag_hash.name + ' (' + tag_hash.keys + ')</li>' }, '')
+						.value();
+			list.append(cloud_list_string);
+			$('#tag-cloud').append(list);
 		}
 		
 		// playlist drawing

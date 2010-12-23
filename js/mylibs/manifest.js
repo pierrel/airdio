@@ -44,18 +44,18 @@ Manifest = function(opts) {
 					var manifest_structure = JSON.parse(resp);
 					if (manifest_structure.meta.version != structure.meta.version) { // just blow it away, needs to be rebuilt
 						S3Ajax.put(bucket, filename, JSON.stringify(structure), {}, function(req, obj) {
-							callback(structure.song_db);
+							callback({db: structure.song_db, tag_cloud: structure.tag_cloud});
 						});
 					} else { // use it
 						structure = manifest_structure;
-						callback(structure.song_db);
+						callback({db: structure.song_db, tag_cloud: structure.tag_cloud});
 					}
 				}, function(req, obj) {
 					throw "InvalidCreds";
 				});
 			} else { // create it
 				S3Ajax.put(bucket, filename, JSON.stringify(structure), {}, function(req, obj) {
-					callback(structure.song_db);
+					callback({db: structure.song_db, tag_cloud: structure.tag_cloud});
 				});
 			}
 			
@@ -195,8 +195,9 @@ Manifest = function(opts) {
 				});
 			} else {
 				var that = this;
-				get_db(function(db) {
-					that.db = db;
+				get_db(function(dbs) {
+					that.db = dbs.db;
+					that.tag_cloud = dbs.tag_cloud;
 					that.syncd = true;
 					that.dirty = false;
 					
