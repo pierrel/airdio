@@ -6,7 +6,7 @@ Manifest = function(opts) {
 			version: 3, // added tag cloud
 			dirty: false, // whether the file has been changed
 			keys: [], // an array of all song keys in the bucket
-			key_hash: {} // a hash key -> {artist, album, track} of all keys
+			key_hash: {} // a hash key -> {artist, album, title, tags} of all keys
 			
 		},
 		song_db: {}, // the actual artist/album/song structure
@@ -84,7 +84,7 @@ Manifest = function(opts) {
 		keys: function() { return structure.meta.keys },
 		add_key: function(opts) { // key, artist, album, track 
 			structure.meta.keys.push(opts.key);
-			structure.meta.key_hash[opts.key] = {artist: opts.artist, album: opts.album, track: opts.track};
+			structure.meta.key_hash[opts.key] = {artist: opts.artist, album: opts.album, track: opts.track, tags: opts.tags};
 		},
 		
 		//
