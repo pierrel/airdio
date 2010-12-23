@@ -1,5 +1,5 @@
 // Requires utils.js, underscore.js, json2.js, and S3Ajax.js (with S3Ajax object initialized with key and secret)
-Manifest = function(bucket) {
+Manifest = function(opts) {
 	var filename = 'airdio_manifest.json';
 	var structure = { // the default file structure
 		meta: { // meta-information
@@ -12,6 +12,8 @@ Manifest = function(bucket) {
 		song_db: {}, // the actual artist/album/song structure
 		tag_cloud: {} // {tag_name: [song key array], ...}
 	};
+	var bucket = opts.bucket;
+	var lastfm = opts.lastfm;
 	
 	var save_db = function(opts) {
 		var db = opts.db || structure.song_db;
@@ -140,7 +142,7 @@ Manifest = function(bucket) {
 		//
 		// Modifying internal DB
 		//
-		add_song: function(opts) { // track, title, album, artist, key
+		add_song: function(opts) { // track, title, album, artist, key, tags
 			if (!this.syncd) { // haven't grabbed the file
 				var that = this;
 				this.sync({
@@ -212,32 +214,21 @@ Manifest = function(bucket) {
 						var key = new_keys[i];
 						// grab the tags
 						(function(key, bucket_name) {
-							ID3.loadTags(Utils.url(bucket_name, key), function() {
-							    var tags = ID3.getAllTags(Utils.url(bucket_name, key));
-								if (tags) {
-									try {
-										var new_song = {
-											title: tags.title,
-											artist: tags.artist,
-											album: tags.album,
-											track: parseInt(tags.track.split('/')[0]),
-											key: key,
-										};
-										new_songs.push(new_song);
-										if (that.song_loaded_fn) {
-											that.song_loaded_fn(Song(new_song));
-										}
-									} catch (err) {
-										console.log('error getting track for ' + tags.title + ', ' + err);
-									}
-								}
 							
+							var save_and_check = function(new_song) {
+								new_songs.push(new_song);
+								if (that.song_loaded_fn) {
+									that.song_loaded_fn(Song(new_song));
+								}
+															
 								// whether or not we added the song, decrement and check if we're the last
 								keys_left -= 1;
 								if (keys_left == 0) {
-									for (j=0; j < new_songs.length; j++) {
+									var new_songs_length = new_songs.length;
+									for (var j=0; j < new_songs_length; j++) {
 										that.add_song(new_songs[j]); // we waited to put songs at this point 
-									}								 // so that calls don't step on each other
+																	 // so that calls don't step on each other
+									}
 									
 									save_db({
 										db: that.db,
@@ -248,6 +239,32 @@ Manifest = function(bucket) {
 									});
 									
 								}
+							}
+							
+							// get the ID3 tags
+							ID3.loadTags(Utils.url(bucket_name, key), function() {
+							    var tags = ID3.getAllTags(Utils.url(bucket_name, key));
+								var new_song = {
+									title: tags.title,
+									artist: tags.artist,
+									album: tags.album,
+									track: parseInt(tags.track.split('/')[0]),
+									key: key,
+									tags: []
+								};
+								
+								// get the genre tags
+								lastfm.track.getTopTags({track: new_song.title, artist: new_song.artist, autocorrect: 1}, {
+									success: function(data) {
+										new_song.tags = _(data.toptags.tag).map(function(tag){ return tag.name });
+										
+										save_and_check(new_song);
+									},
+									error: function(code, message) {
+										save_and_check(new_song);
+									}
+								})
+								
 							});
 						})(key, that.bucket);
 					}

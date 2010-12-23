@@ -4,6 +4,7 @@ Song = function(opts) {
 		track: opts.track,
 		title: opts.title,
 		album: opts.album,
-		artist: opts.artist
+		artist: opts.artist,
+		tags: opts.tags
 	}
 }

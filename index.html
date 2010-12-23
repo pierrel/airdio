@@ -159,7 +159,7 @@
 			}
 		});
 		var audio = a[0];
-				
+						
 		var from_step_1 = function() {
 			// get info
 			if (S3Ajax.KEY_ID.length == 0)
@@ -187,7 +187,7 @@
 		
 		var from_step_2 = function(bucket_name) {	
 			main_bucket = bucket_name;
-			manifest = Manifest(bucket_name);
+			manifest = Manifest({bucket: bucket_name, lastfm: lastfm});
 			manifest.song_loaded(function(song) {
 				$('#notifications').html("Loaded " + song.title + " by " + song.artist);
 			});
