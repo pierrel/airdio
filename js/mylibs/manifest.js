@@ -3,18 +3,27 @@ Manifest = function(bucket) {
 	var filename = 'airdio_manifest.json';
 	var structure = { // the default file structure
 		meta: { // meta-information
-			version: 2,
+			version: 3, // added tag cloud
 			dirty: false, // whether the file has been changed
 			keys: [], // an array of all song keys in the bucket
 			key_hash: {} // a hash key -> {artist, album, track} of all keys
 			
 		},
-		song_db: {} // the actual artist/album/song structure
+		song_db: {}, // the actual artist/album/song structure
+		tag_cloud: {} // {tag_name: [song key array], ...}
 	};
 	
-	var save_db = function(db, callback) {
+	var save_db = function(opts) {
+		var db = opts.db || structure.song_db;
+		var tag_cloud = opts.tag_cloud || structure.tag_cloud;
+		var callback = opts.callback;
+		
+		// set the new structures
+		structure.song_db = db;
+		structure.tag_cloud = tag_cloud;
+		
 		S3Ajax.put(bucket, filename, JSON.stringify(structure), {}, function(req, obj) {
-			callback(structure.song_db);
+			if (callback) callback(structure.song_db);
 		});
 		
 	}
@@ -69,6 +78,7 @@ Manifest = function(bucket) {
 		syncd: false, // has the db yet been grabbed from s3?
 		dirty: true,
 		db: {},
+		tag_cloud: {},
 		keys: function() { return structure.meta.keys },
 		add_key: function(opts) { // key, artist, album, track 
 			structure.meta.keys.push(opts.key);
@@ -160,10 +170,13 @@ Manifest = function(bucket) {
 		//
 		sync: function(opts) { // update, callback()
 			if (this.syncd) {
-				save_db(this.db, function() {
-					that.dirty = false;
-					if (callback)
-						callback();
+				save_db({
+					db: this.db,
+					tag_cloud: this.tag_cloud,
+					callback: function() {
+						that.dirty = false;
+						if (callback) callback();
+					}
 				});
 			} else {
 				var that = this;
@@ -185,11 +198,11 @@ Manifest = function(bucket) {
 			var that = this;
 			S3Ajax.listKeys(this.bucket, {}, function(req, obj) {
 				var new_keys = _(that.keys()).reduce(function(memo, cur) {
-					return _(memo).without(cur);
-				}, _(obj.ListBucketResult.Contents).chain()
-				.map(function(content) { return content.Key})
-				.select(function(key) {return key.match(/mp3$/) && !has_special_characters(key)})
-				.value());
+						return _(memo).without(cur);
+					}, _(obj.ListBucketResult.Contents).chain()
+					.map(function(content) { return content.Key})
+					.select(function(key) {return key.match(/mp3$/) && !has_special_characters(key)})
+					.value());
 								
 				var keys_left = new_keys.length;
 				
@@ -226,8 +239,12 @@ Manifest = function(bucket) {
 										that.add_song(new_songs[j]); // we waited to put songs at this point 
 									}								 // so that calls don't step on each other
 									
-									save_db(that.db, function(saved_db){
-										if (callback) callback();
+									save_db({
+										db: that.db,
+										tag_cloud: that.tag_cloud,
+										callback: function(saved_db){
+											if (callback) callback();
+										}
 									});
 									
 								}
