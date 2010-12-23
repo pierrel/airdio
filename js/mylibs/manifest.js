@@ -152,6 +152,7 @@ Manifest = function(opts) {
 					}
 				});
 			} else { // we know we have a db
+				// add the song to the songs_db
 				if (!this.db[opts.artist])
 					this.db[opts.artist] = {};
 				
@@ -160,7 +161,19 @@ Manifest = function(opts) {
 				db_album = this.db[opts.artist][opts.album];
 				
 				db_album[opts.track] = {title: opts.title, key: opts.key};
+				
+				// add the song's tags to the tag cloud
+				var that = this;
+				_(opts.tags).each(function(tag) {
+					if (!that.tag_cloud[tag]) that.tag_cloud[tag] = [];
+					
+					that.tag_cloud[tag].push(opts.key);
+				});
+				
+				// add to the meta structs
 				this.add_key(opts);
+				
+				// callback if necessary
 				if (opts.callback) {
 					return {title: opts.title, album: opts.album, artist: opts.artist, key: opts.key}
 				}
